@@ -521,14 +521,14 @@ async function initGmail() {
     gmailAccessToken = stored;
     updateGmailStatus('AUTHORIZED', 'ok');
     await loadEmails();
-    // Still initialize token client in the background for silent refresh
+    // GIS still initializes below for silent background token refresh
+  } else {
+    widget.innerHTML = `
+      <div class="lcars-panel-header">INCOMING TRANSMISSIONS</div>
+      <div class="lcars-loading blink">ESTABLISHING COMM LINK...</div>
+    `;
+    updateGmailStatus('LOADING', 'warn');
   }
-
-  widget.innerHTML = `
-    <div class="lcars-panel-header">INCOMING TRANSMISSIONS</div>
-    <div class="lcars-loading blink">ESTABLISHING COMM LINK...</div>
-  `;
-  if (!stored) updateGmailStatus('LOADING', 'warn');
 
   try {
     await new Promise((resolve, reject) => {
@@ -545,19 +545,8 @@ async function initGmail() {
       scope: GMAIL_SCOPES,
       callback: async (tokenResponse) => {
         if (tokenResponse.error) {
-          // Silent re-auth failed — show the button if we don't already have a token
-          if (tokenResponse.error === 'interaction_required' ||
-              tokenResponse.error === 'consent_required' ||
-              tokenResponse.error === 'access_denied') {
-            if (!gmailAccessToken) showAuthButton();
-            return;
-          }
           clearStoredToken();
-          renderEmailWidget(`
-            <div class="lcars-panel-header">INCOMING TRANSMISSIONS</div>
-            <div class="lcars-error">AUTH FAILURE: ${escapeHtml(tokenResponse.error)}</div>
-          `);
-          updateGmailStatus('AUTH FAILED', 'err');
+          if (!gmailAccessToken) showAuthButton();
           return;
         }
         gmailAccessToken = tokenResponse.access_token;
@@ -567,13 +556,12 @@ async function initGmail() {
       },
     });
 
-    if (stored) {
-      // Already loaded from stored token — attempt silent refresh in background
-      gmailTokenClient.requestAccessToken({ prompt: 'none' });
-    } else {
-      // No stored token — try silent first, fall back to button via callback
-      gmailTokenClient.requestAccessToken({ prompt: 'none' });
+    if (!stored) {
+      // No valid stored token — show the auth button immediately
+      showAuthButton();
     }
+    // Attempt a silent token refresh in the background regardless
+    gmailTokenClient.requestAccessToken({ prompt: 'none' });
 
   } catch (err) {
     console.error('[LCARS Email] Init error:', err);
