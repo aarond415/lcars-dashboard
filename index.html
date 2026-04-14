@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LCARS DAILY OPERATIONS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/lcars.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+</head>
+<body>
+
+  <div id="lcars-frame">
+
+    <!-- TOP BAR -->
+    <div id="top-bar">
+      <div class="lcars-elbow-top-left"></div>
+      <div class="top-bar-gap"></div>
+      <div class="bar-fill">
+        <span class="bar-title">LCARS DAILY OPERATIONS</span>
+      </div>
+      <div class="bar-divider"></div>
+      <div class="bar-right">
+        <span id="stardate">STARDATE —</span>
+      </div>
+    </div>
+
+    <!-- CONTENT AREA (sidebar + main) -->
+    <div id="content-area">
+
+      <!-- LEFT SIDEBAR -->
+      <div id="left-sidebar">
+        <div class="sidebar-block sb-orange" data-view="dashboard">SYS</div>
+        <div class="sidebar-block sb-blue" data-view="comms">COM</div>
+        <div class="sidebar-block sb-lavender" data-view="nav">NAV</div>
+        <div class="sidebar-block sb-peach" data-view="med">MED</div>
+        <div class="sidebar-block sb-teal" data-view="ops">OPS</div>
+        <div class="sidebar-block sb-light-blue" data-view="eng">ENG</div>
+        <div class="sidebar-block sb-red" data-view="sec">SEC</div>
+        <div class="sidebar-block sb-yellow" data-view="sci">SCI</div>
+        <div class="sidebar-spacer"></div>
+      </div>
+
+      <!-- MAIN CONTENT -->
+      <div id="main-content">
+
+        <div id="view-dashboard" class="lcars-view active">
+
+        <!-- TOP WIDGETS ROW -->
+        <div class="top-widgets">
+
+          <div id="weather-widget" class="lcars-panel">
+            <div class="lcars-panel-header">ATMOSPHERIC CONDITIONS</div>
+            <div class="lcars-loading blink">SCANNING...</div>
+          </div>
+
+          <div id="datetime-widget" class="lcars-panel">
+            <div class="lcars-panel-header">SHIP'S TIME</div>
+            <div id="current-time" class="datetime-time">--:--:--</div>
+            <div id="current-date" class="datetime-date">LOADING...</div>
+            <div class="datetime-divider"></div>
+            <div class="lcars-data-row">
+              <span class="lcars-label">STARDATE</span>
+            </div>
+            <div class="stardate-display" id="stardate-widget">—</div>
+          </div>
+
+          <div id="status-widget" class="lcars-panel">
+            <div class="lcars-panel-header">SYSTEM STATUS</div>
+            <div class="status-row">
+              <span class="status-indicator status-green"></span>
+              <span class="lcars-label">LCARS CORE</span>
+              <span class="lcars-value status-ok">NOMINAL</span>
+            </div>
+            <div class="status-row">
+              <span class="status-indicator status-green"></span>
+              <span class="lcars-label">NETWORK</span>
+              <span class="lcars-value status-ok" id="net-status">ONLINE</span>
+            </div>
+            <div class="status-row">
+              <span class="status-indicator status-yellow"></span>
+              <span class="lcars-label">GMAIL API</span>
+              <span class="lcars-value status-warn" id="gmail-status">PENDING</span>
+            </div>
+            <div class="status-row">
+              <span class="status-indicator status-yellow"></span>
+              <span class="lcars-label">SHORTCUT</span>
+              <span class="lcars-value status-warn" id="shortcut-status">PENDING</span>
+            </div>
+            <div class="status-row">
+              <span class="status-indicator status-green"></span>
+              <span class="lcars-label">WEATHER</span>
+              <span class="lcars-value status-ok" id="weather-status">ONLINE</span>
+            </div>
+            <div class="datetime-divider"></div>
+            <div class="lcars-data-row">
+              <span class="lcars-label">BOOT LOG</span>
+            </div>
+            <div class="boot-log" id="system-status">INITIALIZING...</div>
+          </div>
+
+        </div><!-- /.top-widgets -->
+
+        <!-- EMAIL WIDGET -->
+        <div id="email-widget" class="lcars-panel">
+          <div class="lcars-panel-header">INCOMING TRANSMISSIONS</div>
+          <div class="lcars-loading blink">ESTABLISHING COMM LINK...</div>
+        </div>
+
+        <!-- SHORTCUT WIDGET -->
+        <div id="shortcut-widget" class="lcars-panel">
+          <div class="lcars-panel-header">SHORTCUT — QA READY [CURRENT SPRINT]</div>
+          <div class="lcars-loading blink">ACCESSING DATABASE...</div>
+        </div>
+
+        </div><!-- /#view-dashboard -->
+
+        <!-- COMMS VIEW -->
+        <div id="view-comms" class="lcars-view">
+          <div id="comms-layout">
+
+            <!-- LEFT: Inbox List -->
+            <div id="comms-inbox-panel" class="lcars-panel">
+              <div class="lcars-panel-header">COMM ARRAY — INBOX <span id="comms-unread-count" class="lcars-count"></span></div>
+              <div id="comms-inbox-list">
+                <div class="lcars-loading blink">ACCESSING COMM ARRAY...</div>
+              </div>
+            </div>
+
+            <!-- RIGHT: Detail + Reply -->
+            <div id="comms-detail-panel" class="lcars-panel">
+              <div id="comms-detail-empty">
+                <div class="lcars-empty" style="margin-top: 60px; text-align: center;">
+                  ── SELECT A TRANSMISSION TO VIEW ──
+                </div>
+              </div>
+              <div id="comms-detail-content" style="display:none; height:100%; display:none; flex-direction:column;">
+                <div class="comms-detail-header">
+                  <div class="comms-header-row"><span class="lcars-label">FROM</span><span class="comms-header-value" id="detail-from"></span></div>
+                  <div class="comms-header-row"><span class="lcars-label">TO</span><span class="comms-header-value" id="detail-to"></span></div>
+                  <div class="comms-header-row"><span class="lcars-label">SUBJECT</span><span class="comms-header-value" id="detail-subject"></span></div>
+                  <div class="comms-header-row"><span class="lcars-label">RECEIVED</span><span class="comms-header-value" id="detail-date"></span></div>
+                </div>
+                <div class="comms-body-scroll">
+                  <div class="comms-body" id="detail-body"></div>
+                </div>
+                <div class="comms-reply-section">
+                  <div class="lcars-panel-header" style="margin-bottom: 10px;">COMPOSE REPLY</div>
+                  <textarea id="reply-textarea" class="lcars-textarea" placeholder="ENTER TRANSMISSION..."></textarea>
+                  <div class="reply-actions">
+                    <button class="lcars-button" id="reply-send-btn">⬡ TRANSMIT</button>
+                    <button class="lcars-button lcars-button-blue" id="reply-clear-btn">CLEAR</button>
+                    <span id="reply-status" class="reply-status"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- OPS VIEW -->
+        <div id="view-ops" class="lcars-view">
+          <div id="ops-layout">
+
+            <!-- Sprint Header -->
+            <div id="ops-header" class="lcars-panel">
+              <div class="ops-header-inner">
+                <div class="ops-sprint-info">
+                  <span class="lcars-panel-header" id="ops-sprint-title">LOADING MISSION DATA...</span>
+                  <span class="ops-sprint-dates" id="ops-sprint-dates"></span>
+                </div>
+                <div class="ops-stats-row">
+                  <div class="ops-stat-block">
+                    <span class="ops-stat-num" id="ops-stat-total">—</span>
+                    <span class="ops-stat-lbl">IN QA</span>
+                  </div>
+                  <div class="ops-stat-block" style="--accent: var(--lcars-red);">
+                    <span class="ops-stat-num" id="ops-stat-bugs">—</span>
+                    <span class="ops-stat-lbl">BUGS</span>
+                  </div>
+                  <div class="ops-stat-block" style="--accent: var(--lcars-blue);">
+                    <span class="ops-stat-num" id="ops-stat-features">—</span>
+                    <span class="ops-stat-lbl">FEATURES</span>
+                  </div>
+                  <div class="ops-stat-block" style="--accent: var(--lcars-lavender);">
+                    <span class="ops-stat-num" id="ops-stat-chores">—</span>
+                    <span class="ops-stat-lbl">CHORES</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter Bar -->
+            <div id="ops-filter-bar">
+              <button class="ops-filter-btn active" data-filter="all">ALL</button>
+              <button class="ops-filter-btn" data-filter="bug">BUGS</button>
+              <button class="ops-filter-btn" data-filter="feature">FEATURES</button>
+              <button class="ops-filter-btn" data-filter="chore">CHORES</button>
+            </div>
+
+            <!-- Ticket List -->
+            <div id="ops-ticket-list">
+              <div class="lcars-loading blink">ACCESSING MISSION DATABASE...</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ENG VIEW -->
+        <div id="view-eng" class="lcars-view">
+          <div id="eng-layout">
+
+            <!-- Row 1: Processor + Memory -->
+            <div class="eng-row">
+              <div class="lcars-panel eng-panel" id="eng-cpu">
+                <div class="lcars-panel-header">PROCESSOR</div>
+                <div class="eng-stat-grid" id="eng-cpu-grid">
+                  <div class="lcars-loading blink">SCANNING...</div>
+                </div>
+              </div>
+              <div class="lcars-panel eng-panel" id="eng-memory">
+                <div class="lcars-panel-header">MEMORY SYSTEMS</div>
+                <div class="eng-stat-grid" id="eng-memory-grid">
+                  <div class="lcars-loading blink">SCANNING...</div>
+                </div>
+              </div>
+              <div class="lcars-panel eng-panel" id="eng-gpu">
+                <div class="lcars-panel-header">GRAPHICS PROCESSOR</div>
+                <div class="eng-stat-grid" id="eng-gpu-grid">
+                  <div class="lcars-loading blink">SCANNING...</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 2: Display + Battery + Network -->
+            <div class="eng-row">
+              <div class="lcars-panel eng-panel" id="eng-display">
+                <div class="lcars-panel-header">DISPLAY ARRAY</div>
+                <div class="eng-stat-grid" id="eng-display-grid">
+                  <div class="lcars-loading blink">SCANNING...</div>
+                </div>
+              </div>
+              <div class="lcars-panel eng-panel" id="eng-battery">
+                <div class="lcars-panel-header">POWER SYSTEMS</div>
+                <div class="eng-stat-grid" id="eng-battery-grid">
+                  <div class="lcars-loading blink">SCANNING...</div>
+                </div>
+              </div>
+              <div class="lcars-panel eng-panel" id="eng-network">
+                <div class="lcars-panel-header">NETWORK INTERFACE</div>
+                <div class="eng-stat-grid" id="eng-network-grid">
+                  <div class="lcars-loading blink">SCANNING...</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 3: Storage + System + Uptime -->
+            <div class="eng-row">
+              <div class="lcars-panel eng-panel" id="eng-storage">
+                <div class="lcars-panel-header">STORAGE SYSTEMS</div>
+                <div class="eng-stat-grid" id="eng-storage-grid">
+                  <div class="lcars-loading blink">SCANNING...</div>
+                </div>
+              </div>
+              <div class="lcars-panel eng-panel" id="eng-system">
+                <div class="lcars-panel-header">SYSTEM PROFILE</div>
+                <div class="eng-stat-grid" id="eng-system-grid">
+                  <div class="lcars-loading blink">SCANNING...</div>
+                </div>
+              </div>
+              <div class="lcars-panel eng-panel" id="eng-uptime">
+                <div class="lcars-panel-header">MISSION ELAPSED TIME</div>
+                <div class="eng-stat-grid" id="eng-uptime-grid">
+                  <div class="lcars-loading blink">SCANNING...</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- MED VIEW -->
+        <div id="view-med" class="lcars-view">
+          <div id="med-layout">
+
+            <!-- Left col: Habit Tracker + Pomodoro -->
+            <div id="med-left-col">
+
+              <div class="lcars-panel" id="med-habits-panel">
+                <div class="lcars-panel-header">BIOSYSTEM DAILY PROTOCOLS <span class="lcars-count" id="med-habits-count"></span></div>
+                <div id="med-habits-list"></div>
+                <div id="med-habits-add-row">
+                  <input type="text" id="med-habit-input" class="lcars-input" placeholder="ADD NEW PROTOCOL..." maxlength="50"/>
+                  <button class="lcars-button" id="med-habit-add-btn">ADD</button>
+                </div>
+              </div>
+
+              <div class="lcars-panel" id="med-pomodoro-panel">
+                <div class="lcars-panel-header">FOCUS PROTOCOL — POMODORO TIMER</div>
+                <div id="med-pomodoro-inner">
+                  <div id="med-pomo-display">
+                    <div id="med-pomo-mode">FOCUS SESSION</div>
+                    <div id="med-pomo-time">25:00</div>
+                    <div id="med-pomo-session">SESSION 1 OF 4</div>
+                  </div>
+                  <div id="med-pomo-controls">
+                    <button class="lcars-button" id="med-pomo-start">⬡ ENGAGE</button>
+                    <button class="lcars-button lcars-button-blue" id="med-pomo-reset">RESET</button>
+                  </div>
+                  <div id="med-pomo-settings">
+                    <div class="med-pomo-setting">
+                      <span class="eng-label">FOCUS (MIN)</span>
+                      <input type="number" class="lcars-input med-pomo-input" id="pomo-focus-dur" value="25" min="1" max="90"/>
+                    </div>
+                    <div class="med-pomo-setting">
+                      <span class="eng-label">SHORT BREAK</span>
+                      <input type="number" class="lcars-input med-pomo-input" id="pomo-short-dur" value="5" min="1" max="30"/>
+                    </div>
+                    <div class="med-pomo-setting">
+                      <span class="eng-label">LONG BREAK</span>
+                      <input type="number" class="lcars-input med-pomo-input" id="pomo-long-dur" value="15" min="1" max="60"/>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Right col: Environmental + UV/Air -->
+            <div id="med-right-col">
+
+              <div class="lcars-panel" id="med-env-panel">
+                <div class="lcars-panel-header">ENVIRONMENTAL BIOSCAN</div>
+                <div id="med-env-grid"><div class="lcars-loading blink">SCANNING...</div></div>
+              </div>
+
+              <div class="lcars-panel" id="med-air-panel">
+                <div class="lcars-panel-header">ATMOSPHERIC ANALYSIS — AIR QUALITY</div>
+                <div id="med-air-grid"><div class="lcars-loading blink">SCANNING...</div></div>
+              </div>
+
+              <div class="lcars-panel" id="med-hydration-panel">
+                <div class="lcars-panel-header">HYDRATION MONITOR</div>
+                <div id="med-hydration-inner">
+                  <div class="med-hydration-display">
+                    <div class="med-hydration-glasses" id="med-hydration-glasses"></div>
+                    <div class="med-hydration-info">
+                      <div id="med-hydration-count" class="med-hydration-num">0</div>
+                      <div class="med-hydration-label">OF 8 GLASSES</div>
+                    </div>
+                  </div>
+                  <div class="med-hydration-btns">
+                    <button class="lcars-button" id="med-hydration-add">+ INTAKE</button>
+                    <button class="lcars-button lcars-button-blue" id="med-hydration-remove">− REMOVE</button>
+                    <button class="lcars-button" style="background:var(--lcars-red); margin-left:auto;" id="med-hydration-reset">RESET</button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- NAV VIEW -->
+        <div id="view-nav" class="lcars-view">
+          <div id="nav-layout">
+
+            <!-- Left col: Orbital display + ISS -->
+            <div id="nav-left-col">
+
+              <div class="lcars-panel" id="nav-orbit-panel">
+                <div class="lcars-panel-header">STELLAR NAVIGATION — SOL SYSTEM ORBITAL PLOT</div>
+                <div id="nav-orbit-inner">
+                  <canvas id="nav-orbit-canvas"></canvas>
+                  <div id="nav-orbit-data">
+                    <div class="nav-orbit-stat"><span class="eng-label">DISTANCE FROM SOL</span><span class="eng-value" id="nav-dist-km">—</span></div>
+                    <div class="nav-orbit-stat"><span class="eng-label">DISTANCE (AU)</span><span class="eng-value" id="nav-dist-au">—</span></div>
+                    <div class="nav-orbit-stat"><span class="eng-label">ORBITAL VELOCITY</span><span class="eng-value" id="nav-velocity">—</span></div>
+                    <div class="nav-orbit-stat"><span class="eng-label">TRUE ANOMALY</span><span class="eng-value" id="nav-anomaly">—</span></div>
+                    <div class="nav-orbit-stat"><span class="eng-label">DAYS TO PERIHELION</span><span class="eng-value" id="nav-perihelion">—</span></div>
+                    <div class="nav-orbit-stat"><span class="eng-label">DAYS TO APHELION</span><span class="eng-value" id="nav-aphelion">—</span></div>
+                    <div class="nav-orbit-stat"><span class="eng-label">ORBITAL PROGRESS</span><span class="eng-value" id="nav-progress">—</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="lcars-panel" id="nav-iss-panel">
+                <div class="lcars-panel-header">DEEP SPACE NETWORK — ISS TRACKING</div>
+                <div id="nav-iss-grid">
+                  <div class="lcars-loading blink">ACQUIRING SIGNAL...</div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Right col: Moon + Sun + Clocks -->
+            <div id="nav-right-col">
+
+              <div class="lcars-panel" id="nav-moon-panel">
+                <div class="lcars-panel-header">LUNAR STATUS</div>
+                <div id="nav-moon-content">
+                  <div class="lcars-loading blink">CALCULATING...</div>
+                </div>
+              </div>
+
+              <div class="lcars-panel" id="nav-sun-panel">
+                <div class="lcars-panel-header">SOL RISE / SET</div>
+                <div id="nav-sun-grid">
+                  <div class="lcars-loading blink">CALCULATING...</div>
+                </div>
+              </div>
+
+              <div class="lcars-panel" id="nav-clocks-panel">
+                <div class="lcars-panel-header">STARFLEET COMMAND — WORLD TIME</div>
+                <div id="nav-clocks-grid"></div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- SEC VIEW -->
+        <div id="view-sec" class="lcars-view">
+          <div id="sec-layout">
+
+            <div class="sec-top-row">
+              <!-- Network Identity -->
+              <div class="lcars-panel" id="sec-ip-panel">
+                <div class="lcars-panel-header">NETWORK IDENTITY</div>
+                <div id="sec-ip-grid"><div class="lcars-loading blink">SCANNING...</div></div>
+              </div>
+              <!-- Breach Scanner -->
+              <div class="lcars-panel" id="sec-breach-panel">
+                <div class="lcars-panel-header">PASSWORD BREACH SCANNER</div>
+                <div id="sec-breach-content">
+                  <div class="sec-breach-intro">CHECK ANY PASSWORD AGAINST 800M+ KNOWN COMPROMISED CREDENTIALS</div>
+                  <div class="sec-input-row">
+                    <input type="password" id="sec-breach-input" class="lcars-input" placeholder="ENTER PASSWORD TO SCAN..." />
+                    <button class="lcars-button" id="sec-breach-btn">⬡ SCAN</button>
+                  </div>
+                  <div id="sec-breach-result"></div>
+                  <div class="sec-breach-note">USES K-ANONYMITY — YOUR PASSWORD NEVER LEAVES THIS DEVICE</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Threat Intel Feed -->
+            <div class="lcars-panel" id="sec-news-panel">
+              <div class="lcars-panel-header">THREAT INTELLIGENCE — KREBS ON SECURITY</div>
+              <div id="sec-news-list"><div class="lcars-loading blink">ACCESSING INTELLIGENCE DATABASE...</div></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- SCI VIEW -->
+        <div id="view-sci" class="lcars-view">
+          <div id="sci-layout">
+
+            <!-- Left: APOD -->
+            <div class="lcars-panel" id="sci-apod-panel">
+              <div class="lcars-panel-header">STELLAR CARTOGRAPHY — NASA ASTRONOMY PICTURE OF THE DAY</div>
+              <div id="sci-apod-content"><div class="lcars-loading blink">ACCESSING STARFLEET DATABASE...</div></div>
+            </div>
+
+            <!-- Right column -->
+            <div id="sci-right-col">
+
+              <div class="lcars-panel" id="sci-weather-panel">
+                <div class="lcars-panel-header">SPACE WEATHER — GEOMAGNETIC STATUS</div>
+                <div id="sci-weather-grid"><div class="lcars-loading blink">SCANNING...</div></div>
+              </div>
+
+              <div class="lcars-panel" id="sci-neo-panel">
+                <div class="lcars-panel-header">NEAR EARTH OBJECTS — TODAY</div>
+                <div id="sci-neo-list"><div class="lcars-loading blink">SCANNING...</div></div>
+              </div>
+
+              <div class="lcars-panel" id="sci-seismic-panel">
+                <div class="lcars-panel-header">SEISMIC ACTIVITY — USGS 7-DAY</div>
+                <div id="sci-seismic-list"><div class="lcars-loading blink">SCANNING...</div></div>
+              </div>
+
+              <div class="lcars-panel" id="sci-crew-panel">
+                <div class="lcars-panel-header">PERSONNEL IN ORBIT</div>
+                <div id="sci-crew-list"><div class="lcars-loading blink">SCANNING...</div></div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /#main-content -->
+
+    </div><!-- /#content-area -->
+
+    <!-- BOTTOM BAR -->
+    <div id="bottom-bar">
+      <div class="lcars-elbow-bottom-left"></div>
+      <div class="bottom-bar-gap"></div>
+      <div class="bar-fill bar-fill-bottom">
+        <span class="bar-status" id="bottom-system-status">ALL SYSTEMS NOMINAL</span>
+      </div>
+      <div class="bar-right bar-right-bottom">
+        <span class="bar-right-text">NCC-1701-D</span>
+      </div>
+    </div>
+
+  </div><!-- /#lcars-frame -->
+
+  <script src="config.js"></script>
+  <script src="js/clock.js"></script>
+  <script src="js/weather.js"></script>
+  <script src="js/email.js"></script>
+  <script src="js/shortcut.js"></script>
+  <script src="js/engineering.js"></script>
+  <script src="js/navigation.js"></script>
+  <script src="js/medical.js"></script>
+  <script src="js/security.js"></script>
+  <script src="js/science.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
