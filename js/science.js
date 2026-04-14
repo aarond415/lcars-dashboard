@@ -33,20 +33,19 @@ async function loadAPOD() {
   if (!el) return;
 
   const apiKey = LCARS_CONFIG.nasaApiKey || 'DEMO_KEY';
+  const usingDemo = !LCARS_CONFIG.nasaApiKey || apiKey === 'DEMO_KEY';
 
   try {
     const res  = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${apiKey}`);
     const text = await res.text();
     let d;
     try { d = JSON.parse(text); } catch {
-      // NASA returned non-JSON (rate limit page)
+      // NASA returned non-JSON (HTML rate-limit page)
       el.innerHTML = `
         <div class="sci-apod-rate-limit">
           <div class="sci-apod-title" style="color:var(--lcars-yellow);">NASA API RATE LIMIT REACHED</div>
-          <div class="sci-apod-meta" style="color:#666; margin-top:8px;">DEMO_KEY IS LIMITED TO 30 REQUESTS/HOUR</div>
-          <div class="sci-apod-explanation">
-            GET A FREE PERSONAL API KEY AT <strong style="color:var(--lcars-orange);">API.NASA.GOV</strong>
-            AND ADD IT TO <code style="color:var(--lcars-teal);">config.js → nasaApiKey</code>
+          <div class="sci-apod-meta" style="color:#666; margin-top:8px;">
+            ${usingDemo ? 'DEMO_KEY IS LIMITED TO 30 REQUESTS/HOUR — GET A FREE KEY AT API.NASA.GOV' : 'PERSONAL KEY RATE LIMIT HIT — TRY AGAIN SHORTLY'}
           </div>
         </div>`;
       return;
@@ -58,9 +57,8 @@ async function loadAPOD() {
         el.innerHTML = `
           <div class="sci-apod-rate-limit">
             <div class="sci-apod-title" style="color:var(--lcars-yellow);">NASA API RATE LIMIT REACHED</div>
-            <div class="sci-apod-meta" style="color:#666; margin-top:8px;">DEMO_KEY IS LIMITED TO 30 REQUESTS/HOUR</div>
-            <div class="sci-apod-explanation">
-              GET A FREE PERSONAL API KEY AT <strong style="color:var(--lcars-orange);">API.NASA.GOV</strong> AND ADD IT TO config.js → nasaApiKey
+            <div class="sci-apod-meta" style="color:#666; margin-top:8px;">
+              ${usingDemo ? 'DEMO_KEY IS LIMITED TO 30 REQUESTS/HOUR — GET A FREE KEY AT API.NASA.GOV' : 'PERSONAL KEY RATE LIMIT HIT — TRY AGAIN SHORTLY'}
             </div>
           </div>`;
         return;
@@ -104,61 +102,71 @@ async function loadSpaceWeather() {
   const grid = document.getElementById('sci-weather-grid');
   if (!grid) return;
 
-  try {
-    const [kpRes, windRes] = await Promise.all([
-      fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json'),
-      fetch('https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json'),
-    ]);
+  // Fetch Kp and wind summary independently so one failure doesn't kill the panel
+  const [kpRes, speedRes, magRes] = await Promise.allSettled([
+    fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json').then(r => r.json()),
+    fetch('https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json').then(r => r.json()),
+    fetch('https://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json').then(r => r.json()),
+  ]);
 
-    const kpData  = await kpRes.json();
-    const windData = await windRes.json();
-
-    // kpData[0] is headers, rest are rows: [time_tag, kp, kp_fraction, kp_index]
-    const rows  = kpData.slice(1);
-    const latest = rows[rows.length - 1];
-    const kp    = parseFloat(latest[1]) || 0;
-
-    // Kp scale interpretation
-    const kpLevel =
-      kp < 2 ? { label: 'QUIET',        color: 'var(--lcars-teal)' } :
-      kp < 4 ? { label: 'UNSETTLED',    color: 'var(--lcars-yellow)' } :
-      kp < 5 ? { label: 'ACTIVE',       color: 'var(--lcars-orange)' } :
-      kp < 7 ? { label: 'GEOMAGNETIC STORM', color: 'var(--lcars-red)' } :
-               { label: 'SEVERE STORM', color: 'var(--lcars-red)' };
-
-    const kpPct = Math.min(100, (kp / 9) * 100);
-
-    // Solar wind — latest valid reading
-    const validWind = windData.filter(r => r.proton_speed > 0).slice(-1)[0] || {};
-    const solarSpeed   = validWind.proton_speed   ? `${Math.round(validWind.proton_speed)} KM/S`           : '—';
-    const solarDensity = validWind.proton_density ? `${validWind.proton_density.toFixed(1)} P/CM³`         : '—';
-    const bt           = validWind.bt             ? `${validWind.bt.toFixed(1)} NT`                        : '—';
-
-    const obsTime = latest[0]?.substring(0, 16).replace('T', ' ') || '—';
-
-    grid.innerHTML = `
-      <div class="sci-kp-row">
-        <div class="sci-kp-display">
-          <span class="sci-kp-num" style="color:${kpLevel.color}">${kp.toFixed(1)}</span>
-          <span class="sci-kp-unit">Kp</span>
-        </div>
-        <div class="sci-kp-status" style="color:${kpLevel.color}">${kpLevel.label}</div>
-      </div>
-      <div class="eng-bar-label">
-        <span class="eng-label">GEOMAGNETIC ACTIVITY</span>
-        <span class="eng-value">${kp.toFixed(1)} / 9</span>
-      </div>
-      <div class="eng-bar-track">
-        <div class="eng-bar-fill" style="width:${kpPct}%; background:${kpLevel.color};"></div>
-      </div>
-      ${sciRow('SOLAR WIND SPEED',   solarSpeed)}
-      ${sciRow('PROTON DENSITY',     solarDensity)}
-      ${sciRow('MAGNETIC FIELD (Bt)',bt)}
-      ${sciRow('OBSERVATION',        obsTime + ' UTC')}
-    `;
-  } catch (e) {
-    grid.innerHTML = `<div class="lcars-error" style="padding:8px;">SPACE WEATHER BEACON OFFLINE: ${sciEscape(e.message)}</div>`;
+  // Kp index
+  let kp = 0, obsTime = '—';
+  if (kpRes.status === 'fulfilled') {
+    try {
+      const rows = kpRes.value.slice(1);
+      const latest = rows[rows.length - 1];
+      kp = parseFloat(latest[1]) || 0;
+      obsTime = latest[0]?.substring(0, 16).replace('T', ' ') || '—';
+    } catch {}
   }
+
+  const kpLevel =
+    kp < 2 ? { label: 'QUIET',             color: 'var(--lcars-teal)'   } :
+    kp < 4 ? { label: 'UNSETTLED',         color: 'var(--lcars-yellow)' } :
+    kp < 5 ? { label: 'ACTIVE',            color: 'var(--lcars-orange)' } :
+    kp < 7 ? { label: 'GEOMAGNETIC STORM', color: 'var(--lcars-red)'    } :
+             { label: 'SEVERE STORM',      color: 'var(--lcars-red)'    };
+  const kpPct = Math.min(100, (kp / 9) * 100);
+
+  // Solar wind speed summary — compact single-value JSON
+  let solarSpeed = '—';
+  if (speedRes.status === 'fulfilled') {
+    try {
+      const spd = speedRes.value?.WindSpeed;
+      if (spd) solarSpeed = `${Math.round(spd)} KM/S`;
+    } catch {}
+  }
+
+  // Magnetic field summary
+  let bt = '—', bz = '—';
+  if (magRes.status === 'fulfilled') {
+    try {
+      const m = magRes.value;
+      if (m?.Bt)  bt = `${parseFloat(m.Bt).toFixed(1)} NT`;
+      if (m?.Bz)  bz = `${parseFloat(m.Bz).toFixed(1)} NT`;
+    } catch {}
+  }
+
+  grid.innerHTML = `
+    <div class="sci-kp-row">
+      <div class="sci-kp-display">
+        <span class="sci-kp-num" style="color:${kpLevel.color}">${kp.toFixed(1)}</span>
+        <span class="sci-kp-unit">Kp</span>
+      </div>
+      <div class="sci-kp-status" style="color:${kpLevel.color}">${kpLevel.label}</div>
+    </div>
+    <div class="eng-bar-label">
+      <span class="eng-label">GEOMAGNETIC ACTIVITY</span>
+      <span class="eng-value">${kp.toFixed(1)} / 9</span>
+    </div>
+    <div class="eng-bar-track">
+      <div class="eng-bar-fill" style="width:${kpPct}%; background:${kpLevel.color};"></div>
+    </div>
+    ${sciRow('SOLAR WIND SPEED',    solarSpeed)}
+    ${sciRow('MAGNETIC FIELD (Bt)', bt)}
+    ${sciRow('Bz COMPONENT',        bz)}
+    ${sciRow('OBSERVATION',         obsTime + ' UTC')}
+  `;
 }
 
 // ── NEAR EARTH OBJECTS — NASA ──
