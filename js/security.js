@@ -35,10 +35,16 @@ async function scanNetworkIdentity() {
 
     if (d.error) throw new Error(d.reason || 'API error');
 
-    // Simple VPN/hosting heuristic based on org name
+    // Heuristic VPN/hosting detection based on org/ISP name
     const orgLower  = (d.org || '').toLowerCase();
-    const vpnHints  = ['hosting', 'vpn', 'datacenter', 'cloud', 'amazon', 'google',
-                       'microsoft', 'digitalocean', 'linode', 'vultr', 'ovh', 'hetzner'];
+    const vpnHints  = [
+      'hosting', 'vpn', 'datacenter', 'data center', 'cloud',
+      'amazon', 'google', 'microsoft', 'digitalocean', 'linode',
+      'vultr', 'ovh', 'hetzner', 'clouvider', 'm247', 'leaseweb',
+      'proton', 'nordvpn', 'expressvpn', 'mullvad', 'surfshark',
+      'cyberghost', 'private internet', 'pia', 'ipvanish',
+      'tor project', 'anonine', 'perfect privacy', 'windscribe',
+    ];
     const vpnLikely = vpnHints.some(k => orgLower.includes(k));
 
     grid.innerHTML =
