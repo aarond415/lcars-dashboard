@@ -42,7 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const VIEW_TITLES = {
     dashboard: 'LCARS DAILY OPERATIONS',
     comms:     'COMM ARRAY — TRANSMISSIONS',
-    ops:       'OPS — MISSION CONTROL',
     eng:       'ENGINEERING — COMPUTER CORE DIAGNOSTICS',
     med:       'MEDICAL — BIOSYSTEM ANALYSIS',
     nav:       'NAVIGATION — STELLAR CARTOGRAPHY',
@@ -66,9 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // If navigating to comms, load the inbox
     if (viewId === 'comms' && typeof loadCommsView === 'function') {
       loadCommsView();
-    }
-    if (viewId === 'ops' && typeof loadOpsView === 'function') {
-      loadOpsView();
     }
     if (viewId === 'med' && typeof loadMedView === 'function') {
       loadMedView();
@@ -150,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (document.activeElement.tagName === 'INPUT') return;
       if (document.activeElement.tagName === 'TEXTAREA') return;
       if (typeof initWeather === 'function') initWeather();
-      if (typeof fetchShortcutQATickets === 'function') fetchShortcutQATickets();
       if (typeof loadCommsView === 'function') {
         const commsView = document.getElementById('view-comms');
         if (commsView?.classList.contains('active')) loadCommsView();

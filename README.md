@@ -10,11 +10,10 @@ A Star Trek TNG-styled personal daily dashboard built with vanilla HTML, CSS, an
 
 | Tab | Label | What it shows |
 |-----|-------|---------------|
-| SYS | SYSTEMS | Live clock, Stardate, weather, unread email preview, active Shortcut QA tickets |
+| SYS | SYSTEMS | Live clock, Stardate, weather, unread email preview |
 | COM | COMM ARRAY | Full Gmail inbox with HTML rendering and reply capability |
 | NAV | NAVIGATION | Earth's orbital position, moon phase, ISS live tracker, world clocks, sunrise/sunset |
 | MED | MEDICAL | Habit tracker, Pomodoro timer, hydration log, UV index, air quality |
-| OPS | OPERATIONS | Full Shortcut QA ticket board for the active sprint |
 | ENG | ENGINEERING | Live browser/hardware diagnostics — CPU, memory, GPU, battery, network, storage |
 | SEC | SECURITY | Network identity, HIBP k-anonymity password breach checker, Krebs on Security feed |
 | SCI | SCIENCE | NASA APOD, NOAA space weather / Kp index, near-Earth objects, earthquakes, ISS crew |
@@ -43,7 +42,6 @@ Edit `config.js` and fill in your credentials:
 
 ```js
 const LCARS_CONFIG = {
-  shortcutApiToken: 'YOUR_SHORTCUT_API_TOKEN',
   location: { lat: 40.7128, lon: -74.0060, city: 'New York' },
   gmailClientId: 'YOUR_GMAIL_CLIENT_ID.apps.googleusercontent.com',
   nasaApiKey: 'YOUR_NASA_API_KEY',
@@ -58,15 +56,6 @@ const LCARS_CONFIG = {
 No setup needed. The dashboard prompts for browser geolocation and falls back to the coordinates in `config.js`.
 
 Powered by [Open-Meteo](https://open-meteo.com/) — free, no key required.
-
----
-
-### Shortcut (QA Tickets)
-
-1. Go to [app.shortcut.com/settings/account/api-tokens](https://app.shortcut.com/settings/account/api-tokens)
-2. Generate a token and paste it into `config.js → shortcutApiToken`
-
-The dashboard auto-detects the active sprint and shows stories whose workflow state contains "qa", "review", "testing", or "verification".
 
 ---
 
@@ -114,7 +103,6 @@ After changing your URL, add the new origin to your Google OAuth Client ID's aut
 |------|--------|-------------|
 | Weather & air quality | [Open-Meteo](https://open-meteo.com/) | No |
 | Gmail | [Gmail REST API](https://developers.google.com/gmail/api) + Google Identity Services OAuth | Yes (free) |
-| QA tickets | [Shortcut REST API v3](https://developer.shortcut.com/) | Yes |
 | Astronomy picture | [NASA APOD](https://api.nasa.gov) | Yes (free) |
 | Space weather | [NOAA SWPC](https://www.swpc.noaa.gov/products/real-time-solar-wind) | No |
 | Near-Earth objects | [NASA NeoWs](https://api.nasa.gov) | Yes (free) |
@@ -129,7 +117,7 @@ After changing your URL, add the new origin to your Google OAuth Client ID's aut
 
 ```
 lcars-dashboard/
-├── index.html          — All 8 views defined
+├── index.html          — All 7 views defined
 ├── config.js           — Your API tokens and preferences (fill this in)
 ├── css/
 │   ├── lcars.css       — LCARS design system (colors, components, elbows, fonts)
@@ -139,7 +127,6 @@ lcars-dashboard/
     ├── clock.js        — Live time, date, Stardate (TNG formula)
     ├── weather.js      — Open-Meteo weather + air quality
     ├── email.js        — Gmail REST API, inbox, HTML rendering, reply
-    ├── shortcut.js     — Shortcut API, sprint detection, QA ticket board
     ├── navigation.js   — Orbital mechanics, ISS tracking, moon phase, world clocks
     ├── medical.js      — Habit tracker, Pomodoro, hydration (localStorage)
     ├── engineering.js  — Browser/hardware diagnostics via Web APIs
