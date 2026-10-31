@@ -226,51 +226,8 @@
         <div id="view-med" class="lcars-view">
           <div id="med-layout">
 
-            <!-- Left col: Habit Tracker + Pomodoro -->
-            <div id="med-left-col">
-
-              <div class="lcars-panel" id="med-habits-panel">
-                <div class="lcars-panel-header">BIOSYSTEM DAILY PROTOCOLS <span class="lcars-count" id="med-habits-count"></span></div>
-                <div id="med-habits-list"></div>
-                <div id="med-habits-add-row">
-                  <input type="text" id="med-habit-input" class="lcars-input" placeholder="ADD NEW PROTOCOL..." maxlength="50"/>
-                  <button class="lcars-button" id="med-habit-add-btn">ADD</button>
-                </div>
-              </div>
-
-              <div class="lcars-panel" id="med-pomodoro-panel">
-                <div class="lcars-panel-header">FOCUS PROTOCOL — POMODORO TIMER</div>
-                <div id="med-pomodoro-inner">
-                  <div id="med-pomo-display">
-                    <div id="med-pomo-mode">FOCUS SESSION</div>
-                    <div id="med-pomo-time">25:00</div>
-                    <div id="med-pomo-session">SESSION 1 OF 4</div>
-                  </div>
-                  <div id="med-pomo-controls">
-                    <button class="lcars-button" id="med-pomo-start">⬡ ENGAGE</button>
-                    <button class="lcars-button lcars-button-blue" id="med-pomo-reset">RESET</button>
-                  </div>
-                  <div id="med-pomo-settings">
-                    <div class="med-pomo-setting">
-                      <span class="eng-label">FOCUS (MIN)</span>
-                      <input type="number" class="lcars-input med-pomo-input" id="pomo-focus-dur" value="25" min="1" max="90"/>
-                    </div>
-                    <div class="med-pomo-setting">
-                      <span class="eng-label">SHORT BREAK</span>
-                      <input type="number" class="lcars-input med-pomo-input" id="pomo-short-dur" value="5" min="1" max="30"/>
-                    </div>
-                    <div class="med-pomo-setting">
-                      <span class="eng-label">LONG BREAK</span>
-                      <input type="number" class="lcars-input med-pomo-input" id="pomo-long-dur" value="15" min="1" max="60"/>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            <!-- Right col: Environmental + UV/Air -->
-            <div id="med-right-col">
+            <!-- Top row: Environmental + Air Quality + Hydration -->
+            <div id="med-top-row">
 
               <div class="lcars-panel" id="med-env-panel">
                 <div class="lcars-panel-header">ENVIRONMENTAL BIOSCAN</div>
@@ -301,6 +258,37 @@
               </div>
 
             </div>
+
+            <!-- Pomodoro -->
+              <div class="lcars-panel" id="med-pomodoro-panel">
+                <div class="lcars-panel-header">FOCUS PROTOCOL — POMODORO TIMER</div>
+                <div id="med-pomodoro-inner">
+                  <div id="med-pomo-display">
+                    <div id="med-pomo-mode">FOCUS SESSION</div>
+                    <div id="med-pomo-time">25:00</div>
+                    <div id="med-pomo-session">SESSION 1 OF 4</div>
+                  </div>
+                  <div id="med-pomo-controls">
+                    <button class="lcars-button" id="med-pomo-start">⬡ ENGAGE</button>
+                    <button class="lcars-button lcars-button-blue" id="med-pomo-reset">RESET</button>
+                  </div>
+                  <div id="med-pomo-settings">
+                    <div class="med-pomo-setting">
+                      <span class="eng-label">FOCUS (MIN)</span>
+                      <input type="number" class="lcars-input med-pomo-input" id="pomo-focus-dur" value="25" min="1" max="90"/>
+                    </div>
+                    <div class="med-pomo-setting">
+                      <span class="eng-label">SHORT BREAK</span>
+                      <input type="number" class="lcars-input med-pomo-input" id="pomo-short-dur" value="5" min="1" max="30"/>
+                    </div>
+                    <div class="med-pomo-setting">
+                      <span class="eng-label">LONG BREAK</span>
+                      <input type="number" class="lcars-input med-pomo-input" id="pomo-long-dur" value="15" min="1" max="60"/>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
           </div>
         </div>
 
@@ -314,7 +302,7 @@
               <div class="lcars-panel" id="nav-orbit-panel">
                 <div class="lcars-panel-header">STELLAR NAVIGATION — SOL SYSTEM ORBITAL PLOT</div>
                 <div id="nav-orbit-inner">
-                  <canvas id="nav-orbit-canvas"></canvas>
+                  <div id="nav-orbit-canvas-wrap"><canvas id="nav-orbit-canvas"></canvas></div>
                   <div id="nav-orbit-data">
                     <div class="nav-orbit-stat"><span class="eng-label">DISTANCE FROM SOL</span><span class="eng-value" id="nav-dist-km">—</span></div>
                     <div class="nav-orbit-stat"><span class="eng-label">DISTANCE (AU)</span><span class="eng-value" id="nav-dist-au">—</span></div>
@@ -323,6 +311,25 @@
                     <div class="nav-orbit-stat"><span class="eng-label">DAYS TO PERIHELION</span><span class="eng-value" id="nav-perihelion">—</span></div>
                     <div class="nav-orbit-stat"><span class="eng-label">DAYS TO APHELION</span><span class="eng-value" id="nav-aphelion">—</span></div>
                     <div class="nav-orbit-stat"><span class="eng-label">ORBITAL PROGRESS</span><span class="eng-value" id="nav-progress">—</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="nav-iss-media-row">
+                <div class="lcars-panel" id="nav-iss-cam-panel">
+                  <div class="lcars-panel-header">ISS LIVE FEED — EARTH VIEWING CAMERA</div>
+                  <div class="nav-media-frame" id="nav-iss-cam"></div>
+                  <div class="nav-media-note">
+                    <span>FEED GOES DARK DURING ORBITAL NIGHT AND LOSS OF SIGNAL</span>
+                    <a href="https://eol.jsc.nasa.gov/ESRS/HDEV/" target="_blank" class="nav-ext-link">NASA ↗</a>
+                  </div>
+                </div>
+                <div class="lcars-panel" id="nav-iss-map-panel">
+                  <div class="lcars-panel-header">ISS GROUND TRACK — ESA TRACKER</div>
+                  <div class="nav-media-frame" id="nav-iss-map"></div>
+                  <div class="nav-media-note">
+                    <span>LIVE POSITION, ORBIT PATH AND DAY/NIGHT LINE</span>
+                    <a href="https://isstracker.spaceflight.esa.int/" target="_blank" class="nav-ext-link">ESA ↗</a>
                   </div>
                 </div>
               </div>

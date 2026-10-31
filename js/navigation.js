@@ -2,6 +2,11 @@
 
 let navIssInterval  = null;
 let navClockInterval = null;
+let navOrbitObserver = null;
+
+// NASA's official ISS live stream (as embedded on eol.jsc.nasa.gov/ESRS/HDEV)
+const ISS_STREAM_URL  = 'https://www.youtube.com/embed/ROboUHfPUrU?autoplay=1&mute=1&playsinline=1&rel=0';
+const ISS_TRACKER_URL = 'https://isstracker.spaceflight.esa.int/';
 
 // ── CONSTANTS ──
 const AU_KM        = 149_597_870.7;   // km per AU
@@ -83,11 +88,16 @@ function drawOrbit(date) {
   const canvas = document.getElementById('nav-orbit-canvas');
   if (!canvas) return;
 
-  const W = canvas.offsetWidth;
-  const H = canvas.offsetHeight;
-  canvas.width  = W;
-  canvas.height = H;
+  // Size from the wrapper (the canvas itself is absolutely positioned) and
+  // render at device resolution so it stays sharp on Retina screens.
+  const W = canvas.parentElement.clientWidth;
+  const H = canvas.parentElement.clientHeight;
+  if (!W || !H) return;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
   const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, W, H);
 
   const orbit = computeEarthOrbit(date);
@@ -108,11 +118,11 @@ function drawOrbit(date) {
   const sunX = cx - focusOffset; // Sun at left focus
   const sunY = cy;
 
-  // ── Draw faint orbit ellipse ──
+  // ── Draw orbit ellipse ──
   ctx.save();
-  ctx.strokeStyle = '#1a3a4a';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([4, 6]);
+  ctx.strokeStyle = '#4A8FB0';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 6]);
   ctx.beginPath();
   ctx.ellipse(cx, cy, EARTH_A * scale, EARTH_B * scale, 0, 0, 2 * Math.PI);
   ctx.stroke();
@@ -191,9 +201,9 @@ function drawOrbit(date) {
 
   // ── Direction line from Sun to Earth ──
   ctx.save();
-  ctx.strokeStyle = 'rgba(100, 180, 255, 0.15)';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([2, 4]);
+  ctx.strokeStyle = 'rgba(120, 190, 255, 0.6)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([3, 4]);
   ctx.beginPath();
   ctx.moveTo(sunX, sunY);
   ctx.lineTo(earthX, earthY);
@@ -444,8 +454,14 @@ function renderWorldClocks() {
 async function loadNavView() {
   const now = new Date();
 
-  // Draw orbital plot
+  // Draw orbital plot, and redraw whenever its panel changes size
   drawOrbit(now);
+  if (!navOrbitObserver) {
+    navOrbitObserver = new ResizeObserver(() => drawOrbit(new Date()));
+    navOrbitObserver.observe(document.getElementById('nav-orbit-canvas-wrap'));
+  }
+
+  loadNavMedia();
 
   // ISS — start live polling
   if (navIssInterval) clearInterval(navIssInterval);
@@ -456,4 +472,26 @@ async function loadNavView() {
   renderMoon(now);
   renderWorldClocks();
   renderSunTimes();
+}
+
+// ── ISS LIVE CAMERA + MAP ──
+// Embedded only while NAV is open (app.js calls unloadNavMedia on leaving),
+// so the video stream and map don't keep loading in the background.
+function loadNavMedia() {
+  const embed = (id, src, title) => {
+    const box = document.getElementById(id);
+    if (!box || box.querySelector('iframe')) return;
+    const frame = document.createElement('iframe');
+    frame.src = src;
+    frame.title = title;
+    frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    frame.allowFullscreen = true;
+    box.appendChild(frame);
+  };
+  embed('nav-iss-cam', ISS_STREAM_URL, 'ISS live Earth view');
+  embed('nav-iss-map', ISS_TRACKER_URL, 'ISS tracking map');
+}
+
+function unloadNavMedia() {
+  document.querySelectorAll('#nav-iss-cam iframe, #nav-iss-map iframe').forEach(f => f.remove());
 }

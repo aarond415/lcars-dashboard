@@ -1,8 +1,6 @@
 // LCARS Medical Module — Biosystem Analysis
 
 // ── STORAGE KEYS ──
-const MED_HABITS_KEY     = 'lcars_med_habits';
-const MED_CHECKED_KEY    = 'lcars_med_checked';   // { date: 'YYYY-MM-DD', ids: [...] }
 const MED_HYDRATION_KEY  = 'lcars_med_hydration'; // { date: 'YYYY-MM-DD', count: N }
 const HYDRATION_GOAL     = 8;
 
@@ -19,108 +17,10 @@ function todayStr() {
 
 // ── MAIN ENTRY ──
 function loadMedView() {
-  renderHabits();
   initPomodoro();
   renderHydration();
   scanEnvironment();
   scanAirQuality();
-}
-
-// ─────────────────────────────────────────────
-// HABIT TRACKER
-// ─────────────────────────────────────────────
-
-function getHabits() {
-  try { return JSON.parse(localStorage.getItem(MED_HABITS_KEY)) || []; }
-  catch { return []; }
-}
-
-function saveHabits(habits) {
-  localStorage.setItem(MED_HABITS_KEY, JSON.stringify(habits));
-}
-
-function getChecked() {
-  try {
-    const d = JSON.parse(localStorage.getItem(MED_CHECKED_KEY));
-    if (d && d.date === todayStr()) return new Set(d.ids);
-    return new Set(); // new day — reset
-  } catch { return new Set(); }
-}
-
-function saveChecked(set) {
-  localStorage.setItem(MED_CHECKED_KEY, JSON.stringify({ date: todayStr(), ids: [...set] }));
-}
-
-function renderHabits() {
-  const listEl  = document.getElementById('med-habits-list');
-  const countEl = document.getElementById('med-habits-count');
-  if (!listEl) return;
-
-  const habits  = getHabits();
-  const checked = getChecked();
-
-  // Seed defaults if empty
-  if (habits.length === 0) {
-    const defaults = [
-      { id: 'h1', label: 'HYDRATION — 8 GLASSES' },
-      { id: 'h2', label: 'PHYSICAL ACTIVITY — 30 MIN' },
-      { id: 'h3', label: 'MEDITATION / MINDFULNESS' },
-      { id: 'h4', label: 'NUTRITION — HEALTHY MEAL' },
-      { id: 'h5', label: 'SLEEP SCHEDULE MAINTAINED' },
-    ];
-    saveHabits(defaults);
-    renderHabits();
-    return;
-  }
-
-  const done = habits.filter(h => checked.has(h.id)).length;
-  if (countEl) countEl.textContent = `[${done}/${habits.length} COMPLETE]`;
-
-  listEl.innerHTML = habits.map(h => {
-    const isChecked = checked.has(h.id);
-    return `
-      <div class="med-habit-row ${isChecked ? 'completed' : ''}" data-id="${h.id}">
-        <div class="med-habit-check ${isChecked ? 'checked' : ''}" onclick="toggleHabit('${h.id}')">
-          ${isChecked ? '✓' : ''}
-        </div>
-        <span class="med-habit-label">${h.label}</span>
-        <button class="med-habit-delete" onclick="deleteHabit('${h.id}')" title="Remove">✕</button>
-      </div>
-    `;
-  }).join('');
-
-  // Wire add button
-  const addBtn   = document.getElementById('med-habit-add-btn');
-  const addInput = document.getElementById('med-habit-input');
-  if (addBtn) {
-    addBtn.onclick = addHabit;
-    addInput?.addEventListener('keydown', e => { if (e.key === 'Enter') addHabit(); });
-  }
-}
-
-window.toggleHabit = function(id) {
-  const checked = getChecked();
-  if (checked.has(id)) checked.delete(id);
-  else checked.add(id);
-  saveChecked(checked);
-  renderHabits();
-};
-
-window.deleteHabit = function(id) {
-  const habits = getHabits().filter(h => h.id !== id);
-  saveHabits(habits);
-  renderHabits();
-};
-
-function addHabit() {
-  const input = document.getElementById('med-habit-input');
-  const label = input?.value?.trim().toUpperCase();
-  if (!label) return;
-  const habits = getHabits();
-  habits.push({ id: 'h' + Date.now(), label });
-  saveHabits(habits);
-  input.value = '';
-  renderHabits();
 }
 
 // ─────────────────────────────────────────────

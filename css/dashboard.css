@@ -502,10 +502,12 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  overflow: hidden;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 #nav-orbit-panel {
-  flex: 1;
+  flex-shrink: 0;
+  height: 400px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -518,7 +520,16 @@
   overflow: hidden;
   min-height: 0;
 }
+/* The canvas is taken out of layout and sized to its wrapper by drawOrbit(),
+   so its pixel size never pushes the panel taller than the space it has. */
+#nav-orbit-canvas-wrap {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
 #nav-orbit-canvas {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: block;
@@ -543,6 +554,43 @@
 #nav-iss-panel {
   flex-shrink: 0;
 }
+
+/* ISS live camera + ESA map */
+#nav-iss-media-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.nav-media-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #050505;
+  border: 1px solid #1a1a1a;
+}
+.nav-media-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.nav-media-note {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  font-family: 'Antonio', sans-serif;
+  font-size: 10px;
+  color: #555;
+  letter-spacing: 1px;
+}
+.nav-ext-link {
+  color: var(--lcars-teal);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.nav-ext-link:hover { color: var(--lcars-orange); }
 .nav-iss-coords {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -672,94 +720,18 @@
   overflow: hidden;
 }
 #med-layout {
-  display: grid;
-  grid-template-columns: 1fr 320px;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   height: 100%;
-  overflow: hidden;
-}
-#med-left-col {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  overflow: hidden;
-}
-#med-right-col {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
   overflow-y: auto;
 }
-
-/* Habits panel */
-#med-habits-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-height: 0;
-}
-#med-habits-list {
-  flex: 1;
-  overflow-y: auto;
-  margin-bottom: 10px;
-}
-#med-habits-add-row {
-  display: flex;
-  gap: 10px;
-  align-items: stretch;
-  flex-shrink: 0;
-}
-.med-habit-row {
-  display: flex;
-  align-items: center;
+#med-top-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
-  padding: 9px 4px;
-  border-bottom: 1px solid #111;
-  transition: opacity 0.2s;
-}
-.med-habit-row.completed { opacity: 0.55; }
-.med-habit-check {
-  width: 22px;
-  height: 22px;
-  border: 2px solid var(--lcars-orange);
-  border-radius: 3px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 14px;
-  color: black;
-  background: transparent;
-  flex-shrink: 0;
-  transition: background 0.15s;
-}
-.med-habit-check.checked {
-  background: var(--lcars-teal);
-  border-color: var(--lcars-teal);
-}
-.med-habit-label {
-  font-family: 'Antonio', sans-serif;
-  font-size: 14px;
-  color: #ccc;
-  letter-spacing: 0.5px;
-  flex: 1;
-}
-.med-habit-row.completed .med-habit-label {
-  text-decoration: line-through;
-  color: #555;
-}
-.med-habit-delete {
-  background: none;
-  border: none;
-  color: #333;
-  cursor: pointer;
-  font-size: 12px;
-  padding: 4px;
-  transition: color 0.15s;
   flex-shrink: 0;
 }
-.med-habit-delete:hover { color: var(--lcars-red); }
 
 /* Pomodoro */
 #med-pomodoro-panel { flex-shrink: 0; }

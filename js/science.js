@@ -28,9 +28,22 @@ async function loadSciView() {
 }
 
 // ── NASA ASTRONOMY PICTURE OF THE DAY ──
+// APOD moved to science.nasa.gov, and api.nasa.gov/planetary/apod now often
+// returns a NASA-logo placeholder. So read the latest APOD post from the
+// science.nasa.gov WordPress feed first, and fall back to the API.
+
+const APOD_FEED = 'https://science.nasa.gov/wp-json/wp/v2/image-article?search=apod&per_page=5&_embed=wp:featuredmedia';
+
 async function loadAPOD() {
   const el = document.getElementById('sci-apod-content');
   if (!el) return;
+
+  try {
+    renderAPOD(el, await fetchApodFromFeed());
+    return;
+  } catch (e) {
+    console.warn('[LCARS SCI] APOD feed failed, trying api.nasa.gov:', e.message);
+  }
 
   const apiKey = LCARS_CONFIG.nasaApiKey || 'DEMO_KEY';
   const usingDemo = !LCARS_CONFIG.nasaApiKey || apiKey === 'DEMO_KEY';
@@ -41,62 +54,120 @@ async function loadAPOD() {
     let d;
     try { d = JSON.parse(text); } catch {
       // NASA returned non-JSON (HTML rate-limit page)
-      el.innerHTML = `
-        <div class="sci-apod-rate-limit">
-          <div class="sci-apod-title" style="color:var(--lcars-yellow);">NASA API RATE LIMIT REACHED</div>
-          <div class="sci-apod-meta" style="color:#666; margin-top:8px;">
-            ${usingDemo ? 'DEMO_KEY IS LIMITED TO 30 REQUESTS/HOUR — GET A FREE KEY AT API.NASA.GOV' : 'PERSONAL KEY RATE LIMIT HIT — TRY AGAIN SHORTLY'}
-          </div>
-        </div>`;
+      el.innerHTML = apodRateLimitHtml(usingDemo);
       return;
     }
 
     if (d.error) {
       const msg = d.error.message || JSON.stringify(d.error);
       if (msg.toLowerCase().includes('rate limit') || res.status === 429) {
-        el.innerHTML = `
-          <div class="sci-apod-rate-limit">
-            <div class="sci-apod-title" style="color:var(--lcars-yellow);">NASA API RATE LIMIT REACHED</div>
-            <div class="sci-apod-meta" style="color:#666; margin-top:8px;">
-              ${usingDemo ? 'DEMO_KEY IS LIMITED TO 30 REQUESTS/HOUR — GET A FREE KEY AT API.NASA.GOV' : 'PERSONAL KEY RATE LIMIT HIT — TRY AGAIN SHORTLY'}
-            </div>
-          </div>`;
+        el.innerHTML = apodRateLimitHtml(usingDemo);
         return;
       }
       throw new Error(msg);
     }
     // APOD also reports errors as { code, msg } (e.g. no picture yet for today's UTC date)
     if (!d.media_type) throw new Error(d.msg || 'NO DATA RETURNED');
+    if (/nasa-logo/.test(d.url || '')) throw new Error('NASA API RETURNED A PLACEHOLDER IMAGE');
 
-    const credit = d.copyright ? `© ${d.copyright.replace(/\n/g, ' ')}` : 'PUBLIC DOMAIN';
-
-    if (d.media_type === 'image') {
-      el.innerHTML = `
-        <div class="sci-apod-image-wrap">
-          <img src="${sciEscape(d.hdurl || d.url)}" class="sci-apod-img" alt="${sciEscape(d.title)}"
-               onerror="this.src='${sciEscape(d.url)}'" />
-        </div>
-        <div class="sci-apod-title">${sciEscape(d.title)}</div>
-        <div class="sci-apod-meta">${sciEscape(d.date)} — ${sciEscape(credit)}</div>
-        <div class="sci-apod-explanation">${sciEscape(d.explanation)}</div>
-      `;
-    } else {
-      // Video (usually YouTube)
-      el.innerHTML = `
-        <div class="sci-apod-video-box">
-          <div class="sci-apod-video-label">VIDEO TRANSMISSION</div>
-          <a href="${sciEscape(d.url)}" target="_blank" class="lcars-button" style="display:inline-block; margin-top:12px;">
-            OPEN EXTERNAL VIEWER ↗
-          </a>
-        </div>
-        <div class="sci-apod-title" style="margin-top:16px;">${sciEscape(d.title)}</div>
-        <div class="sci-apod-meta">${sciEscape(d.date)} — ${sciEscape(credit)}</div>
-        <div class="sci-apod-explanation">${sciEscape(d.explanation)}</div>
-      `;
-    }
+    renderAPOD(el, {
+      title: d.title,
+      date: d.date,
+      credit: d.copyright ? `© ${d.copyright.replace(/\n/g, ' ')}` : 'PUBLIC DOMAIN',
+      explanation: d.explanation,
+      mediaType: d.media_type,
+      src: d.hdurl || d.url,
+      fallbackSrc: d.url,
+      link: d.url,
+    });
   } catch (e) {
     el.innerHTML = `<div class="lcars-error">STARFLEET DATABASE UNAVAILABLE: ${sciEscape(e.message)}</div>`;
   }
+}
+
+// Loaded as JSONP (WordPress's built-in _jsonp parameter) because the feed's
+// CORS headers only allow some origins.
+function sciJsonp(url, timeoutMs = 15000) {
+  return new Promise((resolve, reject) => {
+    const cb = `__lcarsJsonp${Date.now()}`;
+    const script = document.createElement('script');
+    const cleanup = () => { clearTimeout(timer); delete window[cb]; script.remove(); };
+    const timer = setTimeout(() => { cleanup(); reject(new Error('FEED TIMEOUT')); }, timeoutMs);
+    window[cb] = data => { cleanup(); resolve(data); };
+    script.onerror = () => { cleanup(); reject(new Error('FEED UNAVAILABLE')); };
+    script.src = `${url}&_jsonp=${cb}`;
+    document.head.appendChild(script);
+  });
+}
+
+async function fetchApodFromFeed() {
+  const posts = await sciJsonp(APOD_FEED);
+  const post  = (posts || []).find(p => /^APOD:/.test(p.title?.rendered || ''));
+  if (!post) throw new Error('NO APOD POST IN FEED');
+
+  const media = post._embedded?.['wp:featuredmedia']?.[0];
+  if (!media?.source_url) throw new Error('APOD POST HAS NO MEDIA');
+
+  const toText = html => {
+    const doc = new DOMParser().parseFromString(html || '', 'text/html');
+    return (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
+  };
+  const body        = toText(post.content?.rendered);
+  const explanation = body.match(/Explanation:\s*(.*?)\s*(Tomorrow['’]s picture|Authors & editors|$)/)?.[1]
+                      || toText(post.excerpt?.rendered);
+  const credit      = body.match(/Credit(?: & Copyright)?:\s*(.*?)\s*Authors & editors/)?.[1];
+  const sizes       = media.media_details?.sizes || {};
+
+  return {
+    title: toText(post.title.rendered).replace(/^APOD:\s*\d{4} \w+ \d{1,2}\s*[–-]\s*/, ''),
+    date: post.date.slice(0, 10),
+    credit: credit ? `CREDIT: ${credit}` : 'NASA APOD',
+    explanation,
+    mediaType: (media.mime_type || '').startsWith('video/') ? 'video-file' : 'image',
+    src: (sizes['2048x2048'] || sizes.large || media).source_url,
+    fallbackSrc: media.source_url,
+    link: post.link,
+  };
+}
+
+function renderAPOD(el, d) {
+  const caption = `
+    <div class="sci-apod-title">${sciEscape(d.title)}</div>
+    <div class="sci-apod-meta">${sciEscape(d.date)} — ${sciEscape(d.credit)}</div>
+    <div class="sci-apod-explanation">${sciEscape(d.explanation)}</div>`;
+
+  if (d.mediaType === 'image') {
+    el.innerHTML = `
+      <div class="sci-apod-image-wrap">
+        <img src="${sciEscape(d.src)}" class="sci-apod-img" alt="${sciEscape(d.title)}"
+             onerror="this.onerror=null; this.src='${sciEscape(d.fallbackSrc)}'" />
+      </div>${caption}`;
+  } else if (d.mediaType === 'video-file') {
+    el.innerHTML = `
+      <div class="sci-apod-image-wrap">
+        <video src="${sciEscape(d.src)}" class="sci-apod-img" controls muted loop playsinline></video>
+      </div>${caption}`;
+  } else {
+    // Video hosted elsewhere (usually YouTube)
+    el.innerHTML = `
+      <div class="sci-apod-video-box">
+        <div class="sci-apod-video-label">VIDEO TRANSMISSION</div>
+        <a href="${sciEscape(d.link)}" target="_blank" class="lcars-button" style="display:inline-block; margin-top:12px;">
+          OPEN EXTERNAL VIEWER ↗
+        </a>
+      </div>
+      <div style="margin-top:16px;">${caption}</div>`;
+  }
+}
+
+function apodRateLimitHtml(usingDemo) {
+  return `
+    <div class="sci-apod-rate-limit">
+      <div class="sci-apod-title" style="color:var(--lcars-yellow);">NASA API RATE LIMIT REACHED</div>
+      <div class="sci-apod-meta" style="color:#666; margin-top:8px;">
+        ${usingDemo ? 'DEMO_KEY IS LIMITED TO 30 REQUESTS/HOUR — GET A FREE KEY AT API.NASA.GOV' : 'PERSONAL KEY RATE LIMIT HIT — TRY AGAIN SHORTLY'}
+      </div>
+    </div>`;
 }
 
 // ── SPACE WEATHER — NOAA Kp Index + Solar Wind ──

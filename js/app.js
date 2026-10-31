@@ -59,6 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.sidebar-block').forEach(b => b.classList.remove('sb-active'));
     const activeBlock = document.querySelector(`.sidebar-block[data-view="${viewId}"]`);
     if (activeBlock) activeBlock.classList.add('sb-active');
+    // Stop the NAV tab's live video and map when leaving it
+    if (viewId !== 'nav' && typeof unloadNavMedia === 'function') unloadNavMedia();
     // Update bar title
     const titleEl = document.querySelector('.bar-title');
     if (titleEl) titleEl.textContent = VIEW_TITLES[viewId] || 'LCARS';

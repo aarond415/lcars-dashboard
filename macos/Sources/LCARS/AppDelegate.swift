@@ -2,21 +2,19 @@ import AppKit
 import WebKit
 
 // Main window hosting the dashboard in a WKWebView.
-// Dashboard files are bundled in Contents/Resources/web and served as lcars://app/...
+// Dashboard files are bundled in Contents/Resources/web and served by LocalServer
+// on http://127.0.0.1 (see LocalServer.swift for why).
 final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate {
 
     private var window: NSWindow!
     private var webView: WKWebView!
     private let gmail = GmailAuth()
-
-    private static let startURL = URL(string: "\(BundleSchemeHandler.scheme)://app/index.html")!
+    private let server = LocalServer(root: Bundle.main.resourceURL!.appendingPathComponent("web"))
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         buildMenu()
 
         let config = WKWebViewConfiguration()
-        let webRoot = Bundle.main.resourceURL!.appendingPathComponent("web")
-        config.setURLSchemeHandler(BundleSchemeHandler(root: webRoot), forURLScheme: BundleSchemeHandler.scheme)
 
         // Let the dashboard know it is running inside the app, and capture
         // errors so the self-test can report them.
@@ -29,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         config.userContentController.addUserScript(
             WKUserScript(source: bootstrap, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         config.userContentController.add(gmail, name: GmailAuth.messageName)
+        config.preferences.isElementFullscreenEnabled = true   // full-screen ISS video
 
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
@@ -53,10 +52,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
 
-        webView.load(URLRequest(url: Self.startURL))
-
-        if ProcessInfo.processInfo.environment["LCARS_SELFTEST"] != nil {
-            SelfTest.run(on: webView)
+        server.start { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success(let baseURL):
+                self.webView.load(URLRequest(url: baseURL.appendingPathComponent("index.html")))
+                if ProcessInfo.processInfo.environment["LCARS_SELFTEST"] != nil {
+                    SelfTest.run(on: self.webView)
+                }
+            case .failure(let error):
+                let alert = NSAlert(error: error)
+                alert.messageText = "LCARS could not start its local web server."
+                alert.runModal()
+                NSApp.terminate(nil)
+            }
         }
     }
 
@@ -72,7 +81,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard let url = action.request.url,
               action.targetFrame?.isMainFrame ?? true,
-              url.scheme != BundleSchemeHandler.scheme,
+              !(url.host == "127.0.0.1" && url.port == Int(server.port)),
               url.scheme != "about" else {
             decisionHandler(.allow)
             return
