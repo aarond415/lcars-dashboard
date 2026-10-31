@@ -36,6 +36,30 @@ function clearStoredToken() {
   localStorage.removeItem(GMAIL_TOKEN_KEY);
 }
 
+// ── NATIVE APP AUTH ──
+// Inside the macOS app, Google blocks the GIS pop-up, so sign-in goes through
+// the app's native bridge (see macos/Sources/LCARS/GmailAuth.swift). It mimics
+// the GIS token client: prompt 'none' = silent refresh, otherwise interactive.
+
+function isNativeApp() {
+  return !!(window.LCARS_NATIVE && window.webkit?.messageHandlers?.lcarsGmail);
+}
+
+function createNativeTokenClient(clientId, callback) {
+  window.lcarsGmailNative = { onResult: callback };
+  return {
+    requestAccessToken: ({ prompt } = {}) => window.webkit.messageHandlers.lcarsGmail.postMessage({
+      action: prompt === 'none' ? 'refresh' : 'signIn',
+      clientId,
+      scopes: GMAIL_SCOPES,
+    }),
+  };
+}
+
+function gmailClientId() {
+  return isNativeApp() ? LCARS_CONFIG.gmailMacClientId : LCARS_CONFIG.gmailClientId;
+}
+
 // ── UTILITIES ──
 
 function renderEmailWidget(html) {
@@ -482,7 +506,9 @@ function showAuthButton() {
       AUTHORIZATION REQUIRED TO ACCESS COMM ARRAY
     </div>
     <div class="lcars-label" style="margin-bottom: 12px; font-size: 11px; color: #666;">
-      ENSURE <span style="color: var(--lcars-teal);">${window.location.origin}</span> IS IN YOUR GOOGLE OAUTH AUTHORIZED ORIGINS
+      ${isNativeApp()
+        ? 'SIGN-IN OPENS IN A SECURE GOOGLE WINDOW'
+        : `ENSURE <span style="color: var(--lcars-teal);">${window.location.origin}</span> IS IN YOUR GOOGLE OAUTH AUTHORIZED ORIGINS`}
     </div>
   `;
   const btn = document.createElement('button');
@@ -497,18 +523,25 @@ async function initGmail() {
   const widget = document.getElementById('email-widget');
   if (!widget) return;
 
-  if (!LCARS_CONFIG.gmailClientId || LCARS_CONFIG.gmailClientId.startsWith('YOUR_')) {
-    widget.innerHTML = `
-      <div class="lcars-panel-header">INCOMING TRANSMISSIONS</div>
-      <div class="lcars-setup-prompt">
-        <span class="lcars-label">GMAIL ACCESS NOT CONFIGURED</span>
-        <ol class="setup-steps">
+  const clientId = gmailClientId();
+  if (!clientId || clientId.startsWith('YOUR_')) {
+    const steps = isNativeApp() ? `
+          <li>Navigate to <strong>console.cloud.google.com</strong> → your Gmail project</li>
+          <li>Go to <strong>Credentials → Create OAuth 2.0 Client ID</strong> (type <strong>iOS</strong>)</li>
+          <li>Bundle ID: <strong>com.aarond415.lcars</strong></li>
+          <li>Copy the Client ID into <code>config.js → gmailMacClientId</code> and rebuild the app</li>
+    ` : `
           <li>Navigate to <strong>console.cloud.google.com</strong></li>
           <li>Create a project and enable the <strong>Gmail API</strong></li>
           <li>Go to <strong>Credentials → Create OAuth 2.0 Client ID</strong> (Web application)</li>
           <li>Add your origin to Authorized JavaScript Origins</li>
           <li>Copy the Client ID into <code>config.js → gmailClientId</code></li>
-        </ol>
+    `;
+    widget.innerHTML = `
+      <div class="lcars-panel-header">INCOMING TRANSMISSIONS</div>
+      <div class="lcars-setup-prompt">
+        <span class="lcars-label">GMAIL ACCESS NOT CONFIGURED</span>
+        <ol class="setup-steps">${steps}</ol>
       </div>
     `;
     updateGmailStatus('UNCONFIGURED', 'warn');
@@ -530,31 +563,43 @@ async function initGmail() {
     updateGmailStatus('LOADING', 'warn');
   }
 
-  try {
-    await new Promise((resolve, reject) => {
-      if (typeof google !== 'undefined' && google.accounts) { resolve(); return; }
-      const script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.onload = resolve;
-      script.onerror = () => reject(new Error('FAILED TO LOAD GOOGLE IDENTITY SERVICES'));
-      document.head.appendChild(script);
-    });
+  const onToken = async (tokenResponse) => {
+    if (tokenResponse.error) {
+      clearStoredToken();
+      if (!gmailAccessToken) showAuthButton();
+      return;
+    }
+    gmailAccessToken = tokenResponse.access_token;
+    saveToken(tokenResponse);
+    updateGmailStatus('AUTHORIZED', 'ok');
+    // Renew silently shortly before expiry so a long-running session stays signed in
+    clearTimeout(window._gmailRefreshTimer);
+    window._gmailRefreshTimer = setTimeout(
+      () => gmailTokenClient.requestAccessToken({ prompt: 'none' }),
+      Math.max(60, (tokenResponse.expires_in || 3600) - 300) * 1000,
+    );
+    await loadEmails();
+  };
 
-    gmailTokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: LCARS_CONFIG.gmailClientId,
-      scope: GMAIL_SCOPES,
-      callback: async (tokenResponse) => {
-        if (tokenResponse.error) {
-          clearStoredToken();
-          if (!gmailAccessToken) showAuthButton();
-          return;
-        }
-        gmailAccessToken = tokenResponse.access_token;
-        saveToken(tokenResponse);
-        updateGmailStatus('AUTHORIZED', 'ok');
-        await loadEmails();
-      },
-    });
+  try {
+    if (isNativeApp()) {
+      gmailTokenClient = createNativeTokenClient(clientId, onToken);
+    } else {
+      await new Promise((resolve, reject) => {
+        if (typeof google !== 'undefined' && google.accounts) { resolve(); return; }
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('FAILED TO LOAD GOOGLE IDENTITY SERVICES'));
+        document.head.appendChild(script);
+      });
+
+      gmailTokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: GMAIL_SCOPES,
+        callback: onToken,
+      });
+    }
 
     if (!stored) {
       // No valid stored token — show the auth button immediately

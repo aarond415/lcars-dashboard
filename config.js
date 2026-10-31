@@ -12,6 +12,10 @@ const LCARS_CONFIG = {
   // Gmail OAuth Client ID - get from Google Cloud Console
   gmailClientId: 'YOUR_GMAIL_CLIENT_ID.apps.googleusercontent.com',
 
+  // Gmail OAuth Client ID for the macOS app (Google Cloud → OAuth client type "iOS",
+  // bundle ID com.aarond415.lcars). The web client ID above is used in a browser.
+  gmailMacClientId: 'YOUR_GMAIL_MAC_CLIENT_ID.apps.googleusercontent.com',
+
   // Weather refresh interval in milliseconds (default: 10 minutes)
   weatherRefreshInterval: 10 * 60 * 1000,
 

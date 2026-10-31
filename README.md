@@ -82,6 +82,26 @@ Gmail requires a Google Cloud OAuth 2.0 setup:
 
 ---
 
+## macOS App
+
+`macos/` wraps the dashboard in a native Mac app (Swift + WKWebView) with a combadge icon, so it launches from the Dock without a server.
+
+```bash
+macos/build.sh --install
+```
+
+This builds `LCARS.app`, bundles the dashboard files into it and copies it to `/Applications`. Re-run it after changing any dashboard file. It needs Xcode installed (it doesn't need to be the selected toolchain). To edit the app code in Xcode, open `macos/Package.swift`.
+
+Gmail sign-in works differently in the app, because Google blocks its web sign-in pop-up inside apps. The app uses the system sign-in sheet instead, which needs a second OAuth client ID:
+
+1. In Google Cloud Console → **Credentials → Create Credentials → OAuth 2.0 Client ID**, choose type **iOS**
+2. Bundle ID: `com.aarond415.lcars`
+3. Copy the Client ID into `config.js → gmailMacClientId` and run `macos/build.sh --install`
+
+After the first sign-in, the app keeps a refresh token in your Keychain and signs in silently.
+
+---
+
 ## Hosting on a Raspberry Pi
 
 Install nginx and copy files to the web root:

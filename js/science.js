@@ -65,6 +65,8 @@ async function loadAPOD() {
       }
       throw new Error(msg);
     }
+    // APOD also reports errors as { code, msg } (e.g. no picture yet for today's UTC date)
+    if (!d.media_type) throw new Error(d.msg || 'NO DATA RETURNED');
 
     const credit = d.copyright ? `© ${d.copyright.replace(/\n/g, ' ')}` : 'PUBLIC DOMAIN';
 
