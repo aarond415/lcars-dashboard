@@ -4,11 +4,12 @@ import WebKit
 // Main window hosting the dashboard in a WKWebView.
 // Dashboard files are bundled in Contents/Resources/web and served by LocalServer
 // on http://127.0.0.1 (see LocalServer.swift for why).
-final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate, NSMenuItemValidation {
 
     private var window: NSWindow!
     private var webView: WKWebView!
     private let gmail = GmailAuth()
+    private let bridge = AppBridge()
     private let server = LocalServer(root: Bundle.main.resourceURL!.appendingPathComponent("web"))
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -27,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         config.userContentController.addUserScript(
             WKUserScript(source: bootstrap, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         config.userContentController.add(gmail, name: GmailAuth.messageName)
+        config.userContentController.add(bridge, name: AppBridge.messageName)
         config.preferences.isElementFullscreenEnabled = true   // full-screen ISS video
 
         webView = WKWebView(frame: .zero, configuration: config)
@@ -47,6 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         window.appearance = NSAppearance(named: .darkAqua)
         window.minSize = NSSize(width: 960, height: 640)
         window.contentView = webView
+        bridge.window = window
         window.center()
         window.setFrameAutosaveName("LCARSMainWindow")
         window.makeKeyAndOrderFront(nil)
@@ -105,11 +108,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         webView.reload()
     }
 
+    // The dashboard owns display-mode state (js/display.js); it calls back
+    // through AppBridge to go full screen and keep the display awake.
+    @objc private func toggleDisplayMode(_ sender: Any?) {
+        webView.evaluateJavaScript("window.lcarsToggleDisplayMode && window.lcarsToggleDisplayMode()")
+    }
+
+    @objc private func toggleOpenAtLogin(_ sender: Any?) {
+        bridge.toggleOpenAtLogin()
+    }
+
+    func validateMenuItem(_ item: NSMenuItem) -> Bool {
+        if item.action == #selector(toggleOpenAtLogin(_:)) {
+            item.state = bridge.opensAtLogin ? .on : .off
+        }
+        return true
+    }
+
     private func buildMenu() {
         let main = NSMenu()
 
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: "About LCARS", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: "Open at Login", action: #selector(toggleOpenAtLogin(_:)), keyEquivalent: "").target = self
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Hide LCARS", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         let hideOthers = appMenu.addItem(withTitle: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
@@ -131,6 +153,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
         let viewMenu = NSMenu(title: "View")
         viewMenu.addItem(withTitle: "Reload Dashboard", action: #selector(reloadDashboard(_:)), keyEquivalent: "r").target = self
+        let display = viewMenu.addItem(withTitle: "Display Mode", action: #selector(toggleDisplayMode(_:)), keyEquivalent: "d")
+        display.keyEquivalentModifierMask = [.command, .shift]
+        display.target = self
         let fullScreen = viewMenu.addItem(withTitle: "Enter Full Screen", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f")
         fullScreen.keyEquivalentModifierMask = [.command, .control]
         main.addItem(submenu: viewMenu, title: "View")

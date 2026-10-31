@@ -47,6 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
     nav:       'NAVIGATION — STELLAR CARTOGRAPHY',
     sec:       'SECURITY — THREAT ASSESSMENT',
     sci:       'SCIENCE — STELLAR CARTOGRAPHY & ANALYSIS',
+    met:       'METEOROLOGY — ATMOSPHERIC SCIENCES',
+    ast:       'ASTROMETRICS — SKY SURVEY',
+    ops:       'OPERATIONS — LAUNCH CONTROL',
   };
 
   function navigateTo(viewId) {
@@ -82,6 +85,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (viewId === 'sci' && typeof loadSciView === 'function') {
       loadSciView();
+    }
+    if (viewId === 'met' && typeof loadMetView === 'function') {
+      loadMetView();
+    }
+    if (viewId === 'ast' && typeof loadAstView === 'function') {
+      loadAstView();
+    }
+    if (viewId === 'ops' && typeof loadOpsView === 'function') {
+      loadOpsView();
     }
   }
 

@@ -4,6 +4,7 @@
 const GMAIL_SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/calendar.readonly',  // SYS mission schedule (calendar.js)
 ].join(' ');
 const GMAIL_BASE = 'https://gmail.googleapis.com/gmail/v1/users/me';
 
@@ -150,6 +151,15 @@ async function gmailFetch(path, options = {}) {
   return res.json();
 }
 
+// Dock badge in the macOS app: true inbox unread count (not just the 10 shown)
+async function updateUnreadBadge() {
+  if (!LcarsNative.isApp()) return;
+  try {
+    const label = await gmailFetch('/labels/INBOX');
+    LcarsNative.badge(label.messagesUnread || 0);
+  } catch {}
+}
+
 // ── DASHBOARD WIDGET: compact inbox preview ──
 
 async function loadEmails() {
@@ -169,6 +179,7 @@ async function loadEmails() {
         <div class="lcars-empty">NO UNREAD MESSAGES — COMM CHANNELS CLEAR</div>
       `);
       updateGmailStatus('CLEAR', 'ok');
+      updateUnreadBadge();
       return;
     }
 
@@ -217,6 +228,7 @@ async function loadEmails() {
     html += `</div>`;
     renderEmailWidget(html);
     updateGmailStatus(`${messages.length} UNREAD`, 'ok');
+    updateUnreadBadge();
 
   } catch (err) {
     console.error('[LCARS Email] loadEmails error:', err);
@@ -579,6 +591,7 @@ async function initGmail() {
       Math.max(60, (tokenResponse.expires_in || 3600) - 300) * 1000,
     );
     await loadEmails();
+    if (typeof loadCalendar === 'function') loadCalendar();
   };
 
   try {

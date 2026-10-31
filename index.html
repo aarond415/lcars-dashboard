@@ -34,16 +34,21 @@
       <div id="left-sidebar">
         <div class="sidebar-block sb-orange" data-view="dashboard">SYS</div>
         <div class="sidebar-block sb-blue" data-view="comms">COM</div>
+        <div class="sidebar-block sb-teal" data-view="met">MET</div>
         <div class="sidebar-block sb-lavender" data-view="nav">NAV</div>
+        <div class="sidebar-block sb-peach" data-view="ast">AST</div>
+        <div class="sidebar-block sb-orange" data-view="ops">OPS</div>
+        <div class="sidebar-block sb-yellow" data-view="sci">SCI</div>
         <div class="sidebar-block sb-peach" data-view="med">MED</div>
         <div class="sidebar-block sb-light-blue" data-view="eng">ENG</div>
         <div class="sidebar-block sb-red" data-view="sec">SEC</div>
-        <div class="sidebar-block sb-yellow" data-view="sci">SCI</div>
         <div class="sidebar-spacer"></div>
       </div>
 
       <!-- MAIN CONTENT -->
       <div id="main-content">
+
+        <div id="alert-banner" class="alert-banner" hidden></div>
 
         <div id="view-dashboard" class="lcars-view active">
 
@@ -88,6 +93,16 @@
               <span class="lcars-label">WEATHER</span>
               <span class="lcars-value status-ok" id="weather-status">ONLINE</span>
             </div>
+            <div class="status-row">
+              <span class="status-indicator status-green"></span>
+              <span class="lcars-label">ALERTS</span>
+              <span class="lcars-value status-ok" id="alert-status">SCANNING</span>
+            </div>
+            <div class="status-row">
+              <span class="status-indicator status-green"></span>
+              <span class="lcars-label">LAUNCH</span>
+              <span class="lcars-value status-ok" id="launch-status">—</span>
+            </div>
             <div class="datetime-divider"></div>
             <div class="lcars-data-row">
               <span class="lcars-label">BOOT LOG</span>
@@ -97,10 +112,18 @@
 
         </div><!-- /.top-widgets -->
 
-        <!-- EMAIL WIDGET -->
-        <div id="email-widget" class="lcars-panel">
-          <div class="lcars-panel-header">INCOMING TRANSMISSIONS</div>
-          <div class="lcars-loading blink">ESTABLISHING COMM LINK...</div>
+        <div id="sys-lower-row">
+          <!-- EMAIL WIDGET -->
+          <div id="email-widget" class="lcars-panel">
+            <div class="lcars-panel-header">INCOMING TRANSMISSIONS</div>
+            <div class="lcars-loading blink">ESTABLISHING COMM LINK...</div>
+          </div>
+
+          <!-- CALENDAR WIDGET (filled by calendar.js after Gmail sign-in) -->
+          <div id="calendar-widget" class="lcars-panel">
+            <div class="lcars-panel-header">MISSION SCHEDULE — TODAY &amp; TOMORROW</div>
+            <div class="lcars-empty">AWAITING COMM LINK AUTHORIZATION</div>
+          </div>
         </div>
 
         </div><!-- /#view-dashboard -->
@@ -403,6 +426,67 @@
           </div>
         </div>
 
+        <!-- MET VIEW -->
+        <div id="view-met" class="lcars-view">
+          <div id="met-layout">
+            <div id="met-left-col">
+              <div class="lcars-panel" id="met-alerts-panel">
+                <div class="lcars-panel-header" id="met-alerts-header">NATIONAL WEATHER SERVICE — ACTIVE ALERTS</div>
+                <div id="met-alerts"><div class="lcars-loading blink">SCANNING...</div></div>
+              </div>
+              <div class="lcars-panel" id="met-days-panel">
+                <div class="lcars-panel-header">LONG-RANGE FORECAST — 7 DAYS</div>
+                <div id="met-days"><div class="lcars-loading blink">COMPUTING...</div></div>
+              </div>
+              <div class="lcars-panel" id="met-hours-panel">
+                <div class="lcars-panel-header">SHORT-RANGE FORECAST — NEXT 24 HOURS</div>
+                <div id="met-hours"></div>
+              </div>
+            </div>
+            <div class="lcars-panel" id="met-tropics-panel">
+              <div class="lcars-panel-header">TROPICAL OUTLOOK — NATIONAL HURRICANE CENTER</div>
+              <div id="met-tropics"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AST VIEW -->
+        <div id="view-ast" class="lcars-view">
+          <div id="ast-layout">
+            <div class="lcars-panel" id="ast-sky-panel">
+              <div class="lcars-panel-header" id="ast-sky-header">SKY TONIGHT</div>
+              <div id="ast-twilight"></div>
+              <div id="ast-sky-inner">
+                <div id="ast-sky-canvas-wrap"><canvas id="ast-sky-canvas"></canvas></div>
+                <div id="ast-sky-table"><div class="lcars-loading blink">COMPUTING EPHEMERIS...</div></div>
+              </div>
+            </div>
+            <div class="lcars-panel" id="ast-iss-panel">
+              <div class="lcars-panel-header">ISS FLYOVERS — VISIBLE PASSES</div>
+              <div id="ast-iss-next"></div>
+              <div id="ast-iss-list"><div class="lcars-loading blink">PROPAGATING ORBIT...</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- OPS VIEW -->
+        <div id="view-ops" class="lcars-view">
+          <div id="ops-layout">
+            <div class="lcars-panel" id="ops-detail-panel">
+              <div class="lcars-panel-header">LAUNCH OPERATIONS — MISSION DETAIL</div>
+              <div id="ops-launch-detail"><div class="lcars-loading blink">ACQUIRING LAUNCH MANIFEST...</div></div>
+            </div>
+            <div class="lcars-panel" id="ops-list-panel">
+              <div class="lcars-panel-header">LAUNCH MANIFEST <span class="lcars-count" id="ops-launch-count"></span></div>
+              <div id="ops-filter-bar">
+                <button class="ops-filter-btn active" data-filter="all">ALL LAUNCHES</button>
+                <button class="ops-filter-btn" data-filter="local">VISIBLE</button>
+              </div>
+              <div id="ops-launch-list"><div class="lcars-loading blink">ACQUIRING...</div></div>
+            </div>
+          </div>
+        </div>
+
         <!-- SCI VIEW -->
         <div id="view-sci" class="lcars-view">
           <div id="sci-layout">
@@ -451,6 +535,7 @@
       <div class="bar-fill bar-fill-bottom">
         <span class="bar-status" id="bottom-system-status">ALL SYSTEMS NOMINAL</span>
       </div>
+      <button id="sound-toggle" class="bar-toggle" title="Toggle LCARS sounds">AUDIO ON</button>
       <div class="bar-right bar-right-bottom">
         <span class="bar-right-text">NCC-1701-D</span>
       </div>
@@ -459,6 +544,10 @@
   </div><!-- /#lcars-frame -->
 
   <script src="config.js"></script>
+  <script src="js/vendor/astronomy.browser.min.js"></script>
+  <script src="js/vendor/satellite.min.js"></script>
+  <script src="js/native.js"></script>
+  <script src="js/sounds.js"></script>
   <script src="js/clock.js"></script>
   <script src="js/weather.js"></script>
   <script src="js/email.js"></script>
@@ -467,6 +556,12 @@
   <script src="js/medical.js"></script>
   <script src="js/security.js"></script>
   <script src="js/science.js"></script>
+  <script src="js/launches.js"></script>
+  <script src="js/alerts.js"></script>
+  <script src="js/meteorology.js"></script>
+  <script src="js/astrometrics.js"></script>
+  <script src="js/calendar.js"></script>
+  <script src="js/display.js"></script>
   <script src="js/app.js"></script>
 
 </body>

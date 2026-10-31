@@ -50,6 +50,7 @@ function getShortDur()  { return parseInt(document.getElementById('pomo-short-du
 function getLongDur()   { return parseInt(document.getElementById('pomo-long-dur')?.value   || 15) * 60; }
 
 function togglePomodoro() {
+  LcarsNative.requestPermission();
   if (pomoRunning) {
     clearInterval(pomoInterval);
     pomoRunning = false;
@@ -79,7 +80,11 @@ function tickPomodoro() {
       else pomoSession = 1;
       pomoSecondsLeft = getFocusDur();
     }
-    // Flash notification
+    // Chime + system notification, then flash the display
+    LcarsSound.play('chime');
+    LcarsNative.notify(
+      pomoMode === 'focus' ? 'BREAK COMPLETE' : 'FOCUS SESSION COMPLETE',
+      pomoMode === 'focus' ? 'Time to focus.' : `Take a ${pomoMode === 'long' ? 'long' : 'short'} break.`);
     const display = document.getElementById('med-pomo-display');
     if (display) {
       display.style.background = 'var(--lcars-orange)';

@@ -1,13 +1,12 @@
 // LCARS Clock — Live date/time + Stardate calculation
 
 function calcStardate(now) {
-  // TNG stardate formula: 1000 * (year - 2323) + (dayOfYear / 365) * 1000
+  // TNG-era mapping: Stardate 41000 began in 1987 (TNG season 1), and each
+  // year adds 1000. The fraction of the year gives the digits after that.
   const year = now.getFullYear();
-  const start = new Date(year, 0, 0);
-  const diff = now - start;
-  const oneDay = 86400000;
-  const dayOfYear = Math.floor(diff / oneDay);
-  return (1000 * (year - 2323) + Math.floor((dayOfYear / 365) * 1000)).toFixed(1);
+  const start = new Date(year, 0, 1);
+  const yearMs = new Date(year + 1, 0, 1) - start;
+  return (41000 + 1000 * (year - 1987) + 1000 * (now - start) / yearMs).toFixed(1);
 }
 
 function updateClock() {
